@@ -16,10 +16,10 @@ make
 ```
 
 3. 打开浏览器，访问127.0.0.1 8888
-![visit1](https://github.com/GanonYou/processPoolServer/blob/master/example/visit1.png)
+![visit1](https://github.com/GanonYou/processPoolServer/blob/master/example/visit1.jpg)
 
 4. 填写表单后submit
-![return](https://github.com/GanonYou/processPoolServer/blob/master/example/return.png)
+![return](https://github.com/GanonYou/processPoolServer/blob/master/example/return.jpg)
 
 ## 进程池结构
 
