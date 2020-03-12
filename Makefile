@@ -9,4 +9,4 @@ task.o: task.h
 
 clean:
 	rm *.o
-	rm server
+	rm cgi_server

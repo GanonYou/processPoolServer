@@ -17,7 +17,7 @@
 
 #define ISspace(x) isspace((int)(x))
 
-#define SERVER_STRING "Server: Youhttp\r\n"
+#define SERVER_STRING "Server: Myhttp\r\n"
 
 /**********************************************************************/
 /* A request has caused a call to accept() on the server port to
@@ -38,7 +38,7 @@ void task_conn::accept_request()
 
     numchars = get_line(m_sockfd, buf, sizeof(buf));
     i = 0; j = 0;
-
+    // 读取http协议结构中的方法部分
     while (!ISspace(buf[j]) && (i < sizeof(method) - 1))
     {
         method[i] = buf[j];
@@ -46,18 +46,19 @@ void task_conn::accept_request()
     }
     method[i] = '\0';
 
-    //log(LOG_DEBUG_L, __FILE__, __LINE__, "task_conn:method is %s", buf);
+    // strcasecmp忽略大小写比较函数，相等则返回0
+    // 当method既不是GET也不是POST时执行unimplemented(m_sockfd);
     if (strcasecmp(method, "GET") && strcasecmp(method, "POST"))
     {
-        //log(LOG_DEBUG_L, __FILE__, __LINE__, "!GET & !POST");
         unimplemented(m_sockfd);
         return;
     }
     
+    // 如果是POST(提交表单)，则执行cgi程序
     if (strcasecmp(method, "POST") == 0) //POST then start cgi
         cgi = 1;
 
-    /*read url*/
+    // 读取http协议结构中的url部分
     i = 0;
     while (ISspace(buf[j]) && (j < sizeof(buf)))
         j++;
@@ -69,7 +70,7 @@ void task_conn::accept_request()
     }
     url[i] = '\0';
 
-    /*deal with GET method*/
+    // 处理GET请求
     if (strcasecmp(method, "GET") == 0)
     {
         query_string = url;
@@ -85,12 +86,14 @@ void task_conn::accept_request()
         }
     }
 
-    /* find files in htdocs/ */
+    // 在html路径下找到相应文件
     sprintf(path, "html%s", url);
     /*default is index.html */
     if (path[strlen(path) - 1] == '/')
-        strcat(path, "index.html");
-    
+        strcat(path, "register.html");
+    //int stat(const char *file_name, struct stat *buf);
+    //函数说明: 通过文件名filename获取文件信息，并保存在buf所指的结构体stat中    
+    //返回值:  执行成功则返回0，失败返回-1，错误代码存于errno
     if (stat(path, &st) == -1) {
         while ((numchars > 0) && strcmp("\n", buf))  /* read & discard headers */
             numchars = get_line(m_sockfd, buf, sizeof(buf));
@@ -101,22 +104,24 @@ void task_conn::accept_request()
     {
         /*is a dir, use index.html in the dir*/
         if ((st.st_mode & S_IFMT) == S_IFDIR)
-            strcat(path, "/index.html");
+            strcat(path, "/register.html");
         /* if st has exec priviledge, cgi = 1*/
         if ((st.st_mode & S_IXUSR) || (st.st_mode & S_IXGRP) || (st.st_mode & S_IXOTH))
         {
-            printf("task_conn:task_conntask_conn\n");
+            //printf("task_conn:task_conntask_conn\n");
             cgi = 1;
         }
         /*!cgi return index.html, else exec cgi */
         if (!cgi)
         {
             //log(LOG_DEBUG_L, __FILE__, __LINE__, "current is !cgi,GET method");
+            printf("Task from connfd = %d : Not CGI , GET method!\n",m_sockfd);
             serve_file(m_sockfd, path);
         }
         else
         {
             //log(LOG_DEBUG_L, __FILE__, __LINE__, "current is cgi,post method");
+            printf("Task from connfd = %d : Is CGI , POST method!\n",m_sockfd);
             execute_cgi(m_sockfd, path, method, query_string);
         }
     }
@@ -291,7 +296,6 @@ void task_conn::execute_cgi(int client, const char *path, const char *method, co
         exit(0);
     } else {    /* parent */
         /* close cgi_input' read and cgi_output's write*/
-        //log(LOG_DEBUG_L, __FILE__, __LINE__, "task_conn:parent %d", client);
         close(cgi_output[1]);
         close(cgi_input[0]);
         if (strcasecmp(method, "POST") == 0)
@@ -378,7 +382,6 @@ void task_conn::headers(int client, const char *filename)
     send(client, buf, strlen(buf), 0);
     strcpy(buf, "\r\n");
     send(client, buf, strlen(buf), 0);
-    printf("task_conn:11111111111111111111");
 }
 
 /**********************************************************************/

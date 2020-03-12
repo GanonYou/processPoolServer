@@ -284,6 +284,7 @@ void processpool< T >::run_child()
                      * 但有一个问题就是有些浪费资源　hash_map获取会更好一些
                      */
                     users[connfd].init( m_epollfd, connfd, client_address );
+                    printf("Sub-process init the connection with client, connfd = %d\n",connfd);
                 }
             }
 
@@ -323,10 +324,11 @@ void processpool< T >::run_child()
                 }
             }
 
-            // 客户请求的到来,调用process来处理
+            // 客户请求的到来,调用accept_request()s来处理
             // 这时候的sockfd其实是connfd
             else if( events[i].events & EPOLLIN )
             {
+                printf("Sub-process deal the request from client, connfd = %d\n",sockfd);
                 users[sockfd].accept_request();
             }
             else
@@ -376,6 +378,7 @@ void processpool< T >::run_parent()
             // 有新连接到来采用Round Robin方式将其分配给一个子进程处理
             if( sockfd == m_listenfd )
             {
+                printf("Parent process receive a new connection!\n");
                 int i =  sub_process_counter;
                 do
                 {
@@ -398,9 +401,8 @@ void processpool< T >::run_parent()
                 
                 // 主进程发送信息通知子进程接受连接
                 // 父进程使用的是m_pipefd[0]
+                printf( "Send request to Sub-process[%d]\n", i );
                 send( m_sub_process[i].m_pipefd[0], ( char* )&new_conn, sizeof( new_conn ), 0 );
-                
-                printf( "send request to child %d\n", i );
             }
 
             // 处理父进程接收到子进程发来的信号
@@ -431,7 +433,7 @@ void processpool< T >::run_parent()
                                     {
                                         if( m_sub_process[i].m_pid == pid )
                                         {
-                                            printf( "child %d join\n", i );
+                                            printf( "Sub-process[%d] closed\n", i );
                                             close( m_sub_process[i].m_pipefd[0] );
                                             m_sub_process[i].m_pid = -1;
                                         }
@@ -452,7 +454,7 @@ void processpool< T >::run_parent()
                             /*父进程终止信号　杀死所有子进程并等待救赎 更好的方式是向父子进程的通信管道发送特殊数据*/
                             case SIGINT:
                             {
-                                printf( "kill all the clild now\n" );
+                                printf( "\n\nKill all the clild now......\n\n" );
                                 for( int i = 0; i < m_process_number; ++i )
                                 {
                                     int pid = m_sub_process[i].m_pid;
